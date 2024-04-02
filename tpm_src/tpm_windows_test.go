@@ -43,4 +43,5 @@ func TestSign(t *testing.T) {
 		t.Errorf("pubkey: %s, sign: %s, data: %s", publicKey, sign, data)
 		t.Errorf("valid %v %v", valid, err)
 	}
+
 }

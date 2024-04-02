@@ -10,41 +10,38 @@ import (
 	"math/big"
 )
 
-// DecodeBase64PublicKey 将 Base64 编码的公钥字符串解码为 *ecdsa.PublicKey 类型
 func DecodeBase64PublicKey(publicKeyBase64 string) (*ecdsa.PublicKey, error) {
-	// 解码 Base64 编码的公钥字符串
-	publicKeyBytes, err := base64.StdEncoding.DecodeString(publicKeyBase64)
+
+	publicKeyBytes, err := base64.RawStdEncoding.DecodeString(publicKeyBase64)
 	if err != nil {
-		return nil, fmt.Errorf("解码公钥出错: %v", err)
-	}
-	// 解析 DER 编码的公钥
-	publicKey, err := x509.ParsePKIXPublicKey(publicKeyBytes)
-	if err != nil {
-		return nil, fmt.Errorf("解析 DER 编码的公钥出错: %v", err)
+		return nil, fmt.Errorf("decode the  publickeyBase64: %v", err)
 	}
 
-	// 转换公钥类型为 *ecdsa.PublicKey
+	publicKey, err := x509.ParsePKIXPublicKey(publicKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("x509.ParsePKIXPublicKey: %v", err)
+	}
+
 	ecdsaPublicKey, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("转换公钥类型出错")
+		return nil, fmt.Errorf("to ecdsa publickey error")
 	}
 
 	return ecdsaPublicKey, nil
 }
 func DecodeBase64Signature(signatureBase64 string) (*big.Int, *big.Int, error) {
-	// 解码 Base64 编码的签名字符串
-	signatureBytes, err := base64.StdEncoding.DecodeString(signatureBase64)
+
+	signatureBytes, err := base64.RawStdEncoding.DecodeString(signatureBase64)
 	if err != nil {
-		return nil, nil, fmt.Errorf("解码签名出错: %v", err)
+		return nil, nil, fmt.Errorf("decode the signatureBase64 error: %v", err)
 	}
 
-	// 解析 DER 编码的 ECDSA 签名
 	var signature struct {
 		R, S *big.Int
 	}
 	_, err = asn1.Unmarshal(signatureBytes, &signature)
 	if err != nil {
-		return nil, nil, fmt.Errorf("解析签名出错: %v", err)
+		return nil, nil, fmt.Errorf("decode signatureBytes to R S error: %v", err)
 	}
 
 	return signature.R, signature.S, nil
@@ -54,16 +51,12 @@ func VerifySignature(publickeyStr, signature string, messageBytes []byte) (bool,
 	if err != nil {
 		return false, err
 	}
-	// 对签名进行DER解码
 	r, s, err := DecodeBase64Signature(signature)
 	if err != nil {
-		fmt.Println("解码签名出错:", err)
 		return false, err
 	}
-	// 对消息进行哈希处理
 	hashed := sha256.Sum256(messageBytes)
 
-	// 验证签名
 	if ecdsa.Verify(publicKey, hashed[:], r, s) {
 		return true, nil
 	} else {
