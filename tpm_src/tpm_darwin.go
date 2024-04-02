@@ -5,14 +5,11 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os/exec"
 
-	"github.com/dropbox/godropbox/errors"
 	"github.com/google/go-tpm-tools/client"
-	"github.com/pritunl/pritunl-client-electron/service/command"
-	"github.com/pritunl/pritunl-client-electron/service/errortypes"
-	"github.com/sirupsen/logrus"
 )
 
 type authInput struct {
@@ -52,33 +49,24 @@ func (t *Tpm) Open(privKey64 string) (err error) {
 
 	deviceAuthPth := getDeviceAuthPath()
 
-	t.cmd = command.Command(deviceAuthPth)
+	t.cmd = Command(deviceAuthPth)
 
 	t.stderr = &bytes.Buffer{}
 	t.cmd.Stderr = t.stderr
 
 	t.stdout, err = t.cmd.StdoutPipe()
 	if err != nil {
-		err = &errortypes.ExecError{
-			errors.Wrapf(err, "tpm: Failed to open stdout"),
-		}
 		return
 	}
 
 	t.stdin, err = t.cmd.StdinPipe()
 	if err != nil {
-		err = &errortypes.ExecError{
-			errors.Wrapf(err, "tpm: Failed to open stdin"),
-		}
 		return
 	}
 
 	err = t.cmd.Start()
 	if err != nil {
 		t.Close()
-		err = &errortypes.ExecError{
-			errors.Wrapf(err, "tpm: Failed to exec device auth"),
-		}
 		return
 	}
 
@@ -92,9 +80,6 @@ func (t *Tpm) Open(privKey64 string) (err error) {
 	inputByt, err := json.Marshal(inputData)
 	if err != nil {
 		t.Close()
-		err = &errortypes.ParseError{
-			errors.Wrap(err, "tpm: Failed to marshal input data"),
-		}
 		return
 	}
 
@@ -112,11 +97,6 @@ func (t *Tpm) write(input []byte) (err error) {
 
 	_, err = t.stdin.Write(input)
 	if err != nil {
-		err = &errortypes.WriteError{
-			errors.Wrapf(err,
-				"tpm: Failed to write to device auth",
-			),
-		}
 		return
 	}
 
@@ -137,20 +117,9 @@ func (t *Tpm) wait() {
 	errOutput := t.stderr.String()
 
 	if t.exitErr != nil {
-		t.exitErr = &errortypes.WriteError{
-			errors.Wrapf(t.exitErr,
-				"tpm: Device auth error",
-			),
-		}
-
-		logrus.WithFields(logrus.Fields{
-			"output": errOutput,
-			"error":  t.exitErr,
-		}).Error("utils: Device auth error")
-
+		fmt.Printf("%v", errOutput)
 		return
 	}
-
 	return
 }
 
@@ -164,12 +133,7 @@ func (t *Tpm) reader() {
 		if err == io.EOF {
 			return
 		} else if err != nil {
-			t.readErr = &errortypes.ExecError{
-				errors.Wrapf(err, "tpm: Failed to read line"),
-			}
-			logrus.WithFields(logrus.Fields{
-				"error": err,
-			}).Error("utils: Failed to read line")
+			t.readErr = fmt.Errorf("error read line")
 			return
 		}
 
@@ -177,13 +141,7 @@ func (t *Tpm) reader() {
 
 		err = json.Unmarshal(bytes.TrimSpace(line), outputData)
 		if err != nil {
-			t.readErr = &errortypes.ParseError{
-				errors.Wrap(err, "tpm: Failed to unmarshal output data"),
-			}
-			logrus.WithFields(logrus.Fields{
-				"output": string(line),
-				"error":  err,
-			}).Error("utils: Failed to unmarshal line")
+			t.readErr = fmt.Errorf("tpm: Failed to unmarshal output data %v", err)
 			return
 		}
 
@@ -221,9 +179,6 @@ func (t *Tpm) Close() {
 
 	return
 }
-func (t *Tpm) PrivKey() string {
-	return t.privKey64
-}
 func (t *Tpm) PublicKey() (pubKey64 string, err error) {
 	<-t.waiter
 
@@ -248,9 +203,7 @@ func (t *Tpm) Sign(data []byte) (privKey64, sig64 string, err error) {
 
 	input, err := json.Marshal(inputData)
 	if err != nil {
-		err = &errortypes.ParseError{
-			errors.Wrap(err, "tpm: Failed to marshal input data"),
-		}
+		err = fmt.Errorf("tpm: Failed to marshal input data %v", err)
 		return
 	}
 

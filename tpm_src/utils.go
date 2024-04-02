@@ -8,6 +8,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"os"
+	"os/exec"
 )
 
 func DecodeBase64PublicKey(publicKeyBase64 string) (*ecdsa.PublicKey, error) {
@@ -62,4 +64,22 @@ func VerifySignature(publickeyStr, signature string, messageBytes []byte) (bool,
 	} else {
 		return false, nil
 	}
+}
+func Command(name string, arg ...string) *exec.Cmd {
+	cmd := exec.Command(name, arg...)
+	return cmd
+}
+func Exists(pth string) (exists bool, err error) {
+	_, err = os.Stat(pth)
+	if err == nil {
+		exists = true
+		return
+	}
+
+	if os.IsNotExist(err) {
+		err = nil
+		return
+	}
+	err = fmt.Errorf("% utils: Failed to stat %s", err, pth)
+	return
 }

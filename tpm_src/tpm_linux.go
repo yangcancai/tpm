@@ -3,14 +3,11 @@ package tpm
 import (
 	"crypto/x509"
 	"encoding/base64"
+	"fmt"
 	"math/big"
 
-	"github.com/dropbox/godropbox/errors"
 	"github.com/google/go-tpm-tools/client"
 	"github.com/google/go-tpm/legacy/tpm2"
-	"github.com/pritunl/pritunl-client-electron/service/errortypes"
-	"github.com/pritunl/pritunl-client-electron/service/utils"
-	"github.com/sirupsen/logrus"
 )
 
 type Sig struct {
@@ -31,9 +28,7 @@ func (t *Tpm) Open(privKey64 string) (err error) {
 
 	tpmDev, err := tpm2.OpenTPM(tpmPth)
 	if err != nil {
-		err = &errortypes.ReadError{
-			errors.Wrap(err, "tpm: Failed to open tpm"),
-		}
+		err = fmt.Errorf("tpm: Failed to open tpm %v", err)
 		return
 	}
 
@@ -56,17 +51,13 @@ func (t *Tpm) Open(privKey64 string) (err error) {
 
 	key, err := client.NewKey(tpmDev, tpm2.HandleOwner, templ)
 	if err != nil {
-		err = &errortypes.ReadError{
-			errors.Wrap(err, "tpm: Failed to create signing key"),
-		}
+		err = fmt.Errorf("tpm: Failed to create signing key %v", err)
 		return
 	}
 
 	bytesPub, err := x509.MarshalPKIXPublicKey(key.PublicKey())
 	if err != nil {
-		err = &errortypes.ParseError{
-			errors.Wrap(err, "tpm: Failed to marshal pub key"),
-		}
+		err = fmt.Errorf("tpm: Failed to marshal pub key %v", err)
 		return
 	}
 
@@ -88,9 +79,7 @@ func (t *Tpm) PublicKey() (pubKey64 string, err error) {
 func (t *Tpm) Sign(data []byte) (privKey64, sig64 string, err error) {
 	sig, err := t.key.SignData(data)
 	if err != nil {
-		err = &errortypes.ParseError{
-			errors.Wrap(err, "tpm: Failed to sign data"),
-		}
+		err = fmt.Errorf("tpm: Failed to sign data %v", err)
 		return
 	}
 
@@ -101,42 +90,36 @@ func (t *Tpm) Sign(data []byte) (privKey64, sig64 string, err error) {
 
 func getTpmPath() (pth string, err error) {
 	pth = "/dev/tpmrm0"
-	exists, err := utils.Exists(pth)
+	exists, err := Exists(pth)
 	if err != nil || exists {
 		return
 	}
 
 	pth = "/dev/tpm0"
-	exists, err = utils.Exists(pth)
+	exists, err = Exists(pth)
 	if err != nil || exists {
 		return
 	}
 
 	pth = "/dev/tpmrm1"
-	exists, err = utils.Exists(pth)
+	exists, err = Exists(pth)
 	if err != nil || exists {
 		return
 	}
 
 	pth = "/dev/tpm1"
-	exists, err = utils.Exists(pth)
+	exists, err = Exists(pth)
 	if err != nil || exists {
 		return
 	}
 
 	pth = "/dev/tpm"
-	exists, err = utils.Exists(pth)
+	exists, err = Exists(pth)
 	if err != nil || exists {
 		return
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"path": "/dev/tpm0",
-	}).Error("tpm: Cannot find TPM for device authentication")
-
-	err = &errortypes.ReadError{
-		errors.New("tpm: Failed to find TPM"),
-	}
+	err = fmt.Errorf("tpm: Failed to find TPM %v", err)
 
 	return
 }
