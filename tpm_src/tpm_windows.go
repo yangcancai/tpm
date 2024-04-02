@@ -53,7 +53,7 @@ func (t *Tpm) Open(privKey64 string) (err error) {
 	}
 
 	t.key = key
-	t.key64 = base64.RawStdEncoding.EncodeToString(bytesPub)
+	t.key64 = base64.StdEncoding.EncodeToString(bytesPub)
 
 	return
 }
@@ -73,7 +73,7 @@ func (t *Tpm) Sign(data []byte) (privKey64, sig64 string, err error) {
 		return
 	}
 
-	sig64 = base64.RawStdEncoding.EncodeToString(sig)
+	sig64 = base64.StdEncoding.EncodeToString(sig)
 
 	return
 }

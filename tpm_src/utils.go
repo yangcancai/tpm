@@ -14,7 +14,7 @@ import (
 
 func DecodeBase64PublicKey(publicKeyBase64 string) (*ecdsa.PublicKey, error) {
 
-	publicKeyBytes, err := base64.RawStdEncoding.DecodeString(publicKeyBase64)
+	publicKeyBytes, err := base64.StdEncoding.DecodeString(publicKeyBase64)
 	if err != nil {
 		return nil, fmt.Errorf("decode the  publickeyBase64: %v", err)
 	}
@@ -33,7 +33,7 @@ func DecodeBase64PublicKey(publicKeyBase64 string) (*ecdsa.PublicKey, error) {
 }
 func DecodeBase64Signature(signatureBase64 string) (*big.Int, *big.Int, error) {
 
-	signatureBytes, err := base64.RawStdEncoding.DecodeString(signatureBase64)
+	signatureBytes, err := base64.StdEncoding.DecodeString(signatureBase64)
 	if err != nil {
 		return nil, nil, fmt.Errorf("decode the signatureBase64 error: %v", err)
 	}
