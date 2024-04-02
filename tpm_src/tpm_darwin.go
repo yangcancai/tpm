@@ -278,5 +278,5 @@ func (t *Tpm) Sign(data []byte) (privKey64, sig64 string, err error) {
 }
 
 func getDeviceAuthPath() string {
-	return "../TpmAuth"
+	return "./TpmAuth"
 }

@@ -1,11 +1,13 @@
-package tpm
+package main
 
 import (
 	"testing"
+
+	tpm "github.com/yangcanca/tpm/tpm_src"
 )
 
 func TestSign(t *testing.T) {
-	instance := &Tpm{}
+	instance := &tpm.Tpm{}
 	err := instance.Open("")
 	if err != nil {
 		t.Errorf("init tpm error %v", err)
@@ -18,12 +20,12 @@ func TestSign(t *testing.T) {
 	}
 	data := []byte("hello")
 	continueKey, sign, _ := instance.Sign(data)
-	valid, err := VerifySignature(publicKey, sign, data)
+	valid, err := tpm.VerifySignature(publicKey, sign, data)
 	if valid != true || err != nil {
 		t.Errorf("pubkey: %s, sign: %s, data: %s", publicKey, sign, data)
 		t.Errorf("valid %v %v", valid, err)
 	}
-	instance = &Tpm{}
+	instance = &tpm.Tpm{}
 	err = instance.Open(continueKey)
 	if err != nil {
 		t.Errorf("init tpm error %v", err)
@@ -38,10 +40,9 @@ func TestSign(t *testing.T) {
 	if continueKey != continueKey1 {
 		t.Errorf("continuekey error %v", continueKey1)
 	}
-	valid, err = VerifySignature(publicKey, sign, data)
+	valid, err = tpm.VerifySignature(publicKey, sign, data)
 	if valid != true || err != nil {
 		t.Errorf("pubkey: %s, sign: %s, data: %s", publicKey, sign, data)
 		t.Errorf("valid %v %v", valid, err)
 	}
-
 }
